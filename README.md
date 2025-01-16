@@ -1,11 +1,12 @@
 # Map Tool
 This project implements a street mapping system using Java.
 Featuring both a graphical interface and an interactive console. 
-* [Components](https://github.com/labruzese/CSC172-MapTool/new/master?filename=README.md#components)
-* [Features](https://github.com/labruzese/CSC172-MapTool/new/master?filename=README.md#features)
-* [A* Algorithm](https://github.com/labruzese/CSC172-MapTool/new/master?filename=README.md#a-algorithm)
-* [Interactive Console](https://github.com/labruzese/CSC172-MapTool/new/master?filename=README.md#interactive-console)
-* [How to Run](https://github.com/labruzese/CSC172-MapTool/new/master?filename=README.md#how-to-run)
+* [Components](https://github.com/labruzese/CSC172-MapTool?tab=readme-ov-file#components)
+* [Features](https://github.com/labruzese/CSC172-MapTool?tab=readme-ov-file#features)
+* [A* Algorithm](https://github.com/labruzese/CSC172-MapTool?tab=readme-ov-file#a-algorithm)
+* [Interactive Console](https://github.com/labruzese/CSC172-MapTool?tab=readme-ov-file#interactive-console)
+* [How to Run](https://github.com/labruzese/CSC172-MapTool?tab=readme-ov-file#how-to-run)
+* [Images](https://github.com/labruzese/CSC172-MapTool?tab=readme-ov-file#images)
 
 # Components
 ## Graph Implementation
@@ -95,3 +96,8 @@ Run the Console program by executing the following command:
 ```java abruzese.console.Console <map.txt> [--show] [--directions startIntersection endIntersection]```
 
 To run the default options you can use the main class instead
+
+# Images
+![Screenshot 2025-01-16 143926](https://github.com/user-attachments/assets/598f34bf-d922-45f1-af11-4dbfc2c6ff1a)
+![Screenshot 2025-01-16 143727](https://github.com/user-attachments/assets/67256d32-a743-46dc-897f-0577dbf670a8)
+
