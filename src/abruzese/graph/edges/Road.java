@@ -1,42 +1,49 @@
 package abruzese.graph.edges;
 
-public class Road implements EdgeWeight<Road> {
-    public final String roadID;
-    private final int distance;
+import java.util.Objects;
 
-    public Road(String roadID, Integer distance) {
+public class Road implements EdgeWeight {
+    public final String roadID;
+    private final double distance;
+
+    public Road(String roadID, double distance) {
         this.roadID = roadID;
         this.distance = distance;
+
+
     }
 
     @Override
-    public Road add(Road other) {
+    public Road add(EdgeWeight other) {
         // Check for overflow
-        if (other.distance == Integer.MAX_VALUE || this.distance == Integer.MAX_VALUE) {
+        if (other.getWeight() == Integer.MAX_VALUE || this.distance == Integer.MAX_VALUE) {
             return infinity();
         }
-        if (Integer.MAX_VALUE - other.distance < this.distance) {
+        if (Integer.MAX_VALUE - other.getWeight() < this.distance) {
             return infinity();
         }
-        return new Road(this.roadID, this.distance + other.distance);
+        if(this.roadID.length() > 1000 || this.roadID.equalsIgnoreCase("really really long road")) return new Road("really really long road", this.distance + other.getWeight());
+        return new Road(this.roadID + "+" + other, this.distance + other.getWeight());
     }
 
+    /**
+     * @return the weight of this weight
+     */
     @Override
-    public Road zero() {
+    public double getWeight() {
+        return distance;
+    }
+
+    private static Road zero() {
         return new Road("ZERO", 0);
     }
 
-    @Override
-    public Road infinity() {
+
+    private static Road infinity() {
         return new Road("INFINITY", Integer.MAX_VALUE);
     }
 
-    @Override
-    public int compareTo(Road other) {
-        return Integer.compare(this.distance, other.distance);
-    }
-
-    public int getDistance() {
+    public double getDistance() {
         return distance;
     }
 
@@ -50,11 +57,11 @@ public class Road implements EdgeWeight<Road> {
 
     @Override
     public int hashCode() {
-        return Integer.hashCode(distance);
+        return Objects.hash(roadID, distance);
     }
 
     @Override
     public String toString() {
-        return roadID + ": " + distance;
+        return roadID;
     }
 }

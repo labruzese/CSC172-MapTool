@@ -1,12 +1,12 @@
-package abruzese.gui;
+package abruzese.gui.components;
 
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
 
 public class Button {
-    private Rectangle bounds;
-    private String text;
+    private final Rectangle bounds;
+    private final String text;
     private boolean isPressed;
     private boolean isEnabled;
 
@@ -33,12 +33,11 @@ public class Button {
         this.isEnabled = enabled;
     }
 
+    // This method was generated with AI, idk how to design a button
     public void draw(Graphics2D g2d) {
-        // Save the current graphics state
         Paint oldPaint = g2d.getPaint();
         Font oldFont = g2d.getFont();
 
-        // Draw button background
         if (!isEnabled) {
             g2d.setColor(Color.LIGHT_GRAY);
         } else if (isPressed) {
@@ -48,23 +47,20 @@ public class Button {
         }
         g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
-        // Draw button border
         g2d.setColor(isEnabled ? Color.BLACK : Color.GRAY);
         g2d.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
-        // Draw button text
         g2d.setColor(isEnabled ? Color.BLACK : Color.GRAY);
         FontMetrics fm = g2d.getFontMetrics();
         int textX = bounds.x + (bounds.width - fm.stringWidth(text)) / 2;
         int textY = bounds.y + (bounds.height + fm.getAscent() - fm.getDescent()) / 2;
         g2d.drawString(text, textX, textY);
 
-        // Restore the graphics state
         g2d.setPaint(oldPaint);
         g2d.setFont(oldFont);
     }
 
-    public boolean handleMouseEvent(MouseEvent e) {
+    public boolean doMouseEvent(MouseEvent e) {
         if (!isEnabled) return false;
 
         switch (e.getID()) {

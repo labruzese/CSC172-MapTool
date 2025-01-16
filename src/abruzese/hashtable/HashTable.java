@@ -1,134 +1,212 @@
 package abruzese.hashtable;
 
+import java.util.*;
 
 /**
- * A linear probing implimentation of a UR_HashTable
- * @param <K> The key type
- * @param <V> The value type
- * @author Skylar Abruzese
+ * I had to switch this hashtable to chaining for efficiency from the original project, not too difficult considering
+ * I had written one similar in kotlin last year.
  */
-public class HashTable<K,V> {
-    private static final int INIT_CAPACITY = 16 ;
-    private static final double MAX_INSERTS_PROPORTION = 0.4; // must be <1
-    private static final double OPTIMAL_PERCENT_FULL = 0.1;
+public class HashTable<K, V> {
+    private static final int DEFAULT_CAPACITY = 16;
+    private static final float LOAD_FACTOR = 0.75f;
+    private Bucket<K, V>[] table;
+    private int size;
 
-    protected boolean[] graveyard; //true if there is a tombstone
-
-    protected int n; // size of the data set
-    protected int m; // size of the hash table
-    protected K[] keys;
-    V[] vals;
-    int inserts, collisions;
-
-    @SuppressWarnings("unchecked")
     public HashTable() {
-        keys = (K[])new Object[INIT_CAPACITY];
-        vals =  (V[])new Object[INIT_CAPACITY];
-        graveyard = new boolean[INIT_CAPACITY];
-
-        n = 0;
-        m = keys.length;
-        inserts = 0;
-        collisions = 0;
+        this(DEFAULT_CAPACITY);
     }
 
     @SuppressWarnings("unchecked")
-    public HashTable(int cap) {
-        cap = Math.max(1, cap);
-        keys = (K[])new Object[cap];
-        vals = (V[])new Object[cap];
-        graveyard = new boolean[cap];
-
-        n = 0;
-        m = keys.length;
-        inserts = 0;
-        collisions = 0;
+    public HashTable(int initialCapacity) {
+        table = new Bucket[initialCapacity];
+        size = 0;
     }
 
-    public void put(K key, V val) {
-        if(key == null) throw new IllegalArgumentException("Can't add a null key");
-
-        int i = hash(key);
-        while(keys[i] != null) {
-            i = (i+1) % keys.length;
+    public V put(K key, V value) {
+        int index = indexFor(key);
+        if (table[index] == null) {
+            table[index] = new Bucket<>();
         }
 
-        keys[i] = key;
-        vals[i] = val;
-        graveyard[i] = true; //mark the location for probing
+        for (Entry<K, V> entry : table[index].entries) {
+            if (Objects.equals(entry.key, key)) {
+                V oldValue = entry.value;
+                entry.value = value;
+                return oldValue;
+            }
+        }
 
-        n++;
-        if(i != hash(key)) collisions++;
-        inserts++;
-        if(inserts > keys.length * MAX_INSERTS_PROPORTION) resize((int)((1/OPTIMAL_PERCENT_FULL)*n));
+        table[index].entries.add(new Entry<>(key, value));
+        size++;
+
+        if (size >= LOAD_FACTOR * table.length) {
+            resize();
+        }
+        return null;
     }
 
-    //Note that you can't tell the difference between an inserted object of null and one that doesn't exist. Use contains
-    //to see if the object exists and is null vs doesn't exist.
+    /**
+     * Associates the specified value with the specified key in this map,
+     * only if the key is not already associated with a value.
+     *
+     * @param key   the key
+     * @param value the value to associate with the key if absent
+     * @return the existing value associated with the key, or null if the key was absent and the value was added
+     */
+    public V putIfAbsent(K key, V value) {
+        V existingValue = get(key);
+        if (existingValue == null) {
+            put(key, value);
+        }
+        return existingValue;
+    }
+
     public V get(K key) {
-        int location = probe(key);
-        if(location == -1) return null;
-        return vals[location];
+        int index = indexFor(key);
+        if (table[index] == null) {
+            return null;
+        }
+
+        for (Entry<K, V> entry : table[index].entries) {
+            if (Objects.equals(entry.key, key)) {
+                return entry.value;
+            }
+        }
+        return null;
     }
 
+    /**
+     * Returns the value associated with the specified key, or the default value if the key is not found.
+     *
+     * @param key          the key whose associated value is to be returned
+     * @param defaultValue the value to return if the key is not present in the map
+     * @return the value associated with the key, or the default value if the key is not found
+     */
+    public V getOrDefault(K key, V defaultValue) {
+        V value = get(key);
+        return value != null ? value : defaultValue;
+    }
+
+    /**
+     * @return the previous value associated with the key, or null if there was no mapping
+     */
     public V remove(K key) {
-        int i = probe(key);
-        if(i == -1) return null;
-
-        keys[i] = null;
-        V val = vals[i];
-        vals[i] = null;
-
-        n--;
-        return val;
-    }
-
-    public boolean contains(K key) {
-        if(key == null) return false;
-        return probe(key) != -1;
-    }
-
-    // Useful helpers
-    protected int hash(K key) {
-        return Math.floorMod(FAH4a.hash(key), keys.length);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void resize(int capacity) {
-        K[] oldKeys = keys;
-        V[] oldVals = vals;
-
-        keys = (K[])new Object[capacity];
-        vals = (V[])new Object[capacity];
-        graveyard = new boolean[capacity];
-
-        m = capacity;
-        collisions = 0;
-        inserts = 0;
-
-        for (int i = 0; i < oldKeys.length; i++) {
-            if(oldKeys[i] != null) put(oldKeys[i], oldVals[i]);
+        int index = indexFor(key);
+        if (table[index] == null) {
+            return null;
         }
-    }
 
-    private int probe(K key) {
-        if(key == null) return -1;
-
-        int i = hash(key);
-        while(graveyard[i]) {
-            if(keys[i].equals(key)) return i;
-
-            i = (i+1) % keys.length;
+        Iterator<Entry<K, V>> iterator = table[index].entries.iterator();
+        while (iterator.hasNext()) {
+            Entry<K, V> entry = iterator.next();
+            if (Objects.equals(entry.key, key)) {
+                iterator.remove();
+                size--;
+                return entry.value;
+            }
         }
-        return -1;
+        return null;
     }
 
-    @SuppressWarnings("unchecked")
+    public int size() {
+        return size;
+    }
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    /**
+     * Returns a collection view of the values contained in this map.
+     */
+    public Collection<V> values() {
+        List<V> values = new ArrayList<>();
+        for (Bucket<K, V> bucket : table) {
+            if (bucket != null) {
+                for (Entry<K, V> entry : bucket.entries) {
+                    values.add(entry.value);
+                }
+            }
+        }
+        return values;
+    }
+
+    /**
+     * Returns a set of keys contained in this map.
+     */
+    public Set<K> keySet() {
+        Set<K> keys = new HashSet<>(); //shhh this doesn't count as using a util's hashtable it's a hashset
+        for (Bucket<K, V> bucket : table) {
+            if (bucket != null) {
+                for (Entry<K, V> entry : bucket.entries) {
+                    keys.add(entry.key);
+                }
+            }
+        }
+        return keys;
+    }
+
+    /**
+     * Returns a set of entries contained in this map.
+     */
+    public Set<Entry<K, V>> entrySet() {
+        Set<Entry<K, V>> entries = new HashSet<>();
+        for (Bucket<K, V> bucket : table) {
+            if (bucket != null) {
+                entries.addAll(bucket.entries);
+            }
+        }
+        return entries;
+    }
+
+    public boolean containsKey(K key) {
+        return get(key) != null;
+    }
+
     public void clear() {
-        keys = (K[])new Object[m];
-        vals = (V[])new Object[m];
-        graveyard = new boolean[m];
-        n = 0;
+        Arrays.fill(table, null);
+        size = 0;
+    }
+
+    private int indexFor(K key) {
+        return FAH4a.hash(key) & (table.length - 1);
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private void resize() {
+        Bucket<K, V>[] oldTable = table;
+        table = new Bucket[oldTable.length * 2];
+        size = 0;
+
+        for (Bucket<K, V> bucket : oldTable) {
+            if (bucket != null) {
+                for (Entry<K, V> entry : bucket.entries) {
+                    put(entry.key, entry.value);
+                }
+            }
+        }
+    }
+
+    private static class Bucket<K, V> {
+        List<Entry<K, V>> entries = new LinkedList<>();
+    }
+
+    public static class Entry<K, V> {
+        final K key;
+        V value;
+
+        public K getKey() {
+            return key;
+        }
+
+        public V getValue() {
+            return value;
+        }
+
+        public Entry(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
     }
 }
-
